@@ -38,12 +38,49 @@ class ZoeDetector:
 
             depth = depth[0, 0].cpu().numpy()
 
-            vmin = np.percentile(depth, 2)
-            vmax = np.percentile(depth, 85)
+            vmin = np.percentile(depth, 2)  # smallest 2%
+            vmax = np.percentile(depth, 85) # largest 85%
 
             depth -= vmin
-            depth /= vmax - vmin
-            depth = 1.0 - depth
-            depth_image = (depth * 255.0).clip(0, 255).astype(np.uint8)
+            depth /= vmax - vmin   # normalize to [0, 1]
+            depth = 1.0 - depth # inverse depth
+            depth_image = (depth * 255.0).clip(0, 255).astype(np.uint8) # limit the depth value into range [0, 255]
 
             return depth_image
+    
+    def estimate(self, input_image):
+
+        assert input_image.ndim == 3
+        image_depth = input_image
+
+        image_depth = torch.from_numpy(image_depth).float().cuda()
+        image_depth = image_depth / 255.0
+        image_depth = rearrange(image_depth, 'h w c -> 1 c h w')
+        depth = self.model.infer(image_depth)
+
+        depth = depth[0, 0].detach().cpu().numpy()
+
+        return depth
+
+    def estimate_normalize(self, input_image):
+        assert input_image.ndim == 3
+        image_depth = input_image
+
+        image_depth = torch.from_numpy(image_depth).float().cuda()
+        image_depth = image_depth / 255.0
+        image_depth = rearrange(image_depth, 'h w c -> 1 c h w')
+        depth = self.model.infer(image_depth)
+
+        depth = depth[0, 0].detach().cpu().numpy()
+
+        vmin = 0.1 # np.percentile(depth, 2)  # smallest 2%
+        vmax = 10 # np.percentile(depth, 85) # largest 85%
+
+        depth -= vmin
+        depth /= vmax - vmin   # normalize to [0, 1]
+        depth = 1.0 - depth # inverse depth
+        depth = depth.clip(0, 1)   
+        depth_image = (depth * 255.0).clip(0, 255).astype(np.uint8) # limit the depth value into range [0, 255]
+
+        return depth, depth_image
+

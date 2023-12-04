@@ -174,7 +174,7 @@ class ZoeDepth(DepthModel):
             # invert depth followed by normalization
             rel_depth = 1.0 / (rel_depth + 1e-6)
             rel_depth = (rel_depth - rel_depth.min()) / \
-                (rel_depth.max() - rel_depth.min())
+                (rel_depth.max() - rel_depth.min()) # normalize to [0,1]
         # concat rel depth with last. First interpolate rel depth to last size
         rel_cond = rel_depth.unsqueeze(1)
         rel_cond = nn.functional.interpolate(

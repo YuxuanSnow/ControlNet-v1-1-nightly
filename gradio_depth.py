@@ -42,16 +42,16 @@ def process(det, input_image, prompt, a_prompt, n_prompt, num_samples, image_res
         if det == 'None':
             detected_map = input_image.copy()
         else:
-            detected_map = preprocessor(resize_image(input_image, detect_resolution))
+            detected_map = preprocessor(resize_image(input_image, detect_resolution)) # apply depth map
             detected_map = HWC3(detected_map)
 
         img = resize_image(input_image, image_resolution)
         H, W, C = img.shape
 
-        detected_map = cv2.resize(detected_map, (W, H), interpolation=cv2.INTER_LINEAR)
+        detected_map = cv2.resize(detected_map, (W, H), interpolation=cv2.INTER_LINEAR) # interpolate to the original resolution
 
-        control = torch.from_numpy(detected_map.copy()).float().cuda() / 255.0
-        control = torch.stack([control for _ in range(num_samples)], dim=0)
+        control = torch.from_numpy(detected_map.copy()).float().cuda() / 255.0 # normalize to [0, 1] again? (why? maybe because of the interpolation)
+        control = torch.stack([control for _ in range(num_samples)], dim=0) # multiple samples
         control = einops.rearrange(control, 'b h w c -> b c h w').clone()
 
         if seed == -1:
