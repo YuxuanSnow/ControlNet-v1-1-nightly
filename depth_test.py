@@ -21,8 +21,9 @@ model = create_model(f'./models/{model_name}.yaml').cpu()
 model.load_state_dict(load_state_dict('./models/v1-5-pruned-emaonly.ckpt', location='cuda'), strict=False)
 model.load_state_dict(load_state_dict(f'./models/{model_name}.pth', location='cuda'), strict=False)
 model = model.cuda()
+for param in model.parameters():
+    param.requires_grad = False
 ddim_sampler = DDIMSampler(model)
-
 
 preprocessor = ZoeDetector()
 
@@ -39,7 +40,7 @@ detected_map = HWC3(detected_map_num) # bring 1 channel to 3 channel by copying
 
 img = resize_image(input_image, 512)
 H, W, C = img.shape
-num_samples = 4
+num_samples = 1
 
 detected_map = cv2.resize(detected_map, (W, H), interpolation=cv2.INTER_LINEAR) # interpolate to the original resolution
 
@@ -63,7 +64,7 @@ model.control_scales = ([1.0] * 13)
 eta = 1.0
 scale = 9.0
 
-samples, intermediates = ddim_sampler.sample(20, num_samples,
+samples, intermediates = ddim_sampler.sample(10, num_samples,
                                                 shape, cond, verbose=False, eta=eta,
                                                 unconditional_guidance_scale=scale,
                                                 unconditional_conditioning=un_cond)
